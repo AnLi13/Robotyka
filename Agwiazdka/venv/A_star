@@ -1,0 +1,111 @@
+class Wezel():
+
+    def __init__(self, rodzic=None, pozycja=None):
+        self.rodzic = rodzic
+        self.pozycja = pozycja
+
+        self.g = 0
+        self.h = 0
+        self.f = 0
+
+    def __eq__(self, other):
+        return self.pozycja == other.pozycja
+
+
+def wyznacz_szciezke(wezel):
+    sciezka = []
+    while wezel is not None:
+        sciezka.append(wezel.pozycja)
+        wezel = wezel.rodzic
+    return sciezka[::-1]
+
+
+def czy_poza_zakresem(tablica, wezel_pozycja):
+    return wezel_pozycja[0] > (len(tablica) - 1) or \
+           wezel_pozycja[0] < 0 or \
+           wezel_pozycja[1] > (len(tablica[len(tablica) - 1]) - 1) or \
+           wezel_pozycja[1] < 0
+
+
+def czy_mozna_przejsc(tablica, wezel_pozycja):
+    return tablica[wezel_pozycja[0]][wezel_pozycja[1]] == 0
+
+
+def wyznacz_dzieci(tablica, aktualny_wezel):
+    dzieci = []
+    for nowa_pozycja in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
+
+        wezel_pozycja = (aktualny_wezel.pozycja[0] + nowa_pozycja[0], aktualny_wezel.pozycja[1] + nowa_pozycja[1])
+
+        if not czy_poza_zakresem(tablica, wezel_pozycja):
+            if czy_mozna_przejsc(tablica, wezel_pozycja):
+                dzieci.append(Wezel(aktualny_wezel, wezel_pozycja))
+
+    return dzieci
+
+
+def wyznacz_odleglosci(dziecko, aktualny_wezel, wezel_koncowy):
+    dziecko.g = aktualny_wezel.g + 1
+    dziecko.h = abs(dziecko.pozycja[0] - wezel_koncowy.pozycja[0]) + abs(dziecko.pozycja[1] - wezel_koncowy.pozycja[1])
+    # dziecko.h = ((dziecko.pozycja[0] - wezel_koncowy.pozycja[0]) ** 2) + ((dziecko.pozycja[1] - wezel_koncowy.pozycja[1]) ** 2)
+    dziecko.f = dziecko.g + dziecko.h
+
+
+def astar(tablica, poczatek, koniec):
+    lista_wejsciowa = []
+    lista_wyjsciowa = []
+
+    lista_wejsciowa.append(Wezel(None, poczatek))
+
+    wezel_koncowy = Wezel(None, koniec)
+
+    while len(lista_wejsciowa) > 0:
+        aktualny_wezel = lista_wejsciowa[0]
+        aktualny_indeks = 0
+        for index, element in enumerate(lista_wejsciowa):
+            if element.f < aktualny_wezel.f:
+                aktualny_wezel = element
+                aktualny_indeks = index
+
+        lista_wejsciowa.pop(aktualny_indeks)
+        lista_wyjsciowa.append(aktualny_wezel)
+
+        if aktualny_wezel == wezel_koncowy:
+            return wyznacz_szciezke(aktualny_wezel)
+
+        dzieci = wyznacz_dzieci(tablica, aktualny_wezel)
+
+        for dziecko in dzieci:
+
+            for lista_wezel in lista_wyjsciowa:
+                if dziecko == lista_wezel:
+                    break
+            else:
+
+                wyznacz_odleglosci(dziecko, aktualny_wezel, wezel_koncowy)
+
+                for lista_wezel in lista_wejsciowa:
+                    if dziecko == lista_wezel and dziecko.g >= lista_wezel.g:
+                        break
+                else:
+                    lista_wejsciowa.append(dziecko)
+
+    return "Nie można znaleźc przejscia"
+
+
+def wczytaj_dane():
+    with open('grid.txt', 'r') as f:
+        tablica = [[int(num) for num in line.split(',')] for line in f]
+    f.close()
+    return tablica
+
+
+def main():
+    poczatek = (0, 0)
+    koniec = (19, 19)
+
+    print(astar(wczytaj_dane(), poczatek, koniec))
+
+
+if __name__ == '__main__':
+    main()
